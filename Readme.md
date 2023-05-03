@@ -5,6 +5,12 @@
   flex lex.l
   gcc y.tab.c lex.yy.c -o generator
 ```
+or
+
+```
+  ./build.sh
+```
+
 ## Run
 
 ```
