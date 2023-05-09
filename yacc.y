@@ -129,11 +129,14 @@ void backpatch(int *list,int next_ir) {
  
   int i=0;
   while(list[i]!=0) {
-    char label[50];
+    char label[10];
     strcat(bool_code[list[i]-100],addr);
     sprintf(label,"L%d: ",next_ir-100);
-    strcat(label,bool_code[next_ir-100]);
-    strcpy(bool_code[next_ir-100],label);
+    
+    
+    
+    //strcat(label,bool_code[next_ir-100]);
+    //strcpy(bool_code[next_ir-100],label);
     i++;
   }
 }
@@ -196,6 +199,17 @@ line:
 |	assignment ';'
 |	declaration ';'
 | loops
+  {
+    char buff[10] = {0};
+    sprintf(buff, "L%d", bool_ir_if_stack[bool_ir_if_top]-100);
+    strcpy(tac[tac_len].instr[0], buff);
+    bool_ir_if_stack[bool_ir_if_top] = 0;
+    bool_ir_if_top-=1;
+    bool_ir_index+=2;
+    bool_ir_start = bool_ir_index;
+    tac_len++;
+    printf("%d\n", bool_ir_index);
+  }
 | RETURN CONSTANT ';'
 ;
 
@@ -224,7 +238,38 @@ branch:
 /* TODO: C like for loops */
 
 loops:
-  WHILE '(' bool_oprtr ')' block
+  WHILE 
+  {
+    char buff[10] = {0};
+    sprintf(buff, "L%d", bool_ir_index-100);
+    loop_stack[++loop_stack_top] = bool_ir_index;
+    strcpy(tac[tac_len].instr[0], buff);
+    tac_len++;
+  } 
+
+  '(' bool_oprtr ')' 
+  {
+    backpatch($<b>4->t,bool_ir_index); 
+    backpatch($<b>4->f,bool_ir_index+1); 
+    generate_bool_oprtr();
+    bool_ir_if_stack[++bool_ir_if_top] = ++bool_ir_index;
+    bool_ir_start = bool_ir_index;
+  }
+  
+  block
+  {
+    // TODO: try making a generic add tac function
+
+    char buff[10] = {0};
+    sprintf(buff, "L%d", loop_stack[loop_stack_top]-100);
+    strcpy(tac[tac_len].instr[0], buff);
+    strcpy(tac[tac_len].instr[3], "goto");
+    tac_len++;
+    
+    loop_stack[loop_stack_top] = 0;
+    loop_stack_top-=1;
+  }
+
 | FOR '(' declaration ';' bool_oprtr ';' unary ')' block
 | FOR '(' assignment ';' bool_oprtr ';' unary ')' block
 ;
@@ -246,7 +291,7 @@ if: IF '(' bool_oprtr ')'
     }
     block
     {
-      char buff[10];
+      char buff[10] = {0};
       sprintf(buff, "L%d:",bool_ir_if_stack[bool_ir_if_top]-100); 
       addToThreeAddressBrnch(buff);
       bool_ir_if_stack[bool_ir_if_top] = 0;
@@ -356,13 +401,13 @@ bool_oprtr:
 | bool_oprtr OR M bool_oprtr
   {
     B *b = calloc(1,sizeof(B)); 
-    backpatch($<b>1->t,$<b>3->next_ir);
+    backpatch($<b>1->f,$<b>3->next_ir);
+    b->t = merge_list($<b>1->t,$<b>4->t);
     b->t = copy_list($<b>4->t);
-    b->f = merge_list($<b>1->f,$<b>4->f);
     $<b>$ = b;
   }
 | '(' bool_oprtr ')'            {$<b>$ = $<b>2;}
-| logic_oprtr                   {$<b>$ = $<b>1;}       
+| logic_oprtr                   {$<b>$ = $<b>1;}
 ;
 
 M: {B *b = calloc(1,sizeof(B)); b->next_ir = bool_ir_index; $<b>$ = b;}
