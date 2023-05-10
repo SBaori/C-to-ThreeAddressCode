@@ -24,17 +24,25 @@ char bool_code[25][50];
 
 struct three_address_code {
 	char instr[4][20];
-} tac[50];
+} *tac_temp,tac[50];
 
-int tac_len;
+int tac_len, tac_temp_len, tac_temp_tot = 1;
+
+struct tac_package {
+  int tac_len;
+  struct three_address_code *tac;
+};
 
 void addToThreeAddressArthmtc(char* op, char* arg1, char* arg2, char* result)
 {
-  strcpy(tac[tac_len].instr[0],result);
-  strcpy(tac[tac_len].instr[1],arg1);
-  strcpy(tac[tac_len].instr[2],arg2);
-  strcpy(tac[tac_len].instr[3],op);
-  tac_len++;
+  if(tac_temp_len >= tac_temp_tot-1) {
+    tac_temp = reallocarray(tac_temp,sizeof(struct three_address_code), tac_temp_tot *= 2);
+  }
+  strcpy(tac_temp[tac_temp_len].instr[0],result);
+  strcpy(tac_temp[tac_temp_len].instr[1],arg1);
+  strcpy(tac_temp[tac_temp_len].instr[2],arg2);
+  strcpy(tac_temp[tac_temp_len].instr[3],op);
+  tac_temp_len++;
 }
 
 void addToThreeAddressBrnch(char *res)
@@ -146,6 +154,7 @@ void backpatch(int *list,int next_ir) {
 %union{
 	char string[50];	
 	B *b;
+  void *ptr;
 }
 
 %token INCLUDE INCL_FILE MACRO
@@ -208,7 +217,6 @@ line:
     bool_ir_index+=2;
     bool_ir_start = bool_ir_index;
     tac_len++;
-    printf("%d\n", bool_ir_index);
   }
 | RETURN CONSTANT ';'
 ;
@@ -228,7 +236,22 @@ vars:
 ;  
 
 assignment:
-	VARIABLE '=' arithmetic_oprtr   {addToThreeAddressArthmtc("",$<string>3,"",$<string>1);}
+	VARIABLE '=' arithmetic_oprtr   
+  {
+    addToThreeAddressArthmtc("",$<string>3,"",$<string>1);
+    for(int i=0;i<tac_temp_len; i++)
+    {
+      strcpy(tac[tac_len].instr[0], tac_temp[i].instr[0]);
+      strcpy(tac[tac_len].instr[1], tac_temp[i].instr[1]);
+      strcpy(tac[tac_len].instr[2], tac_temp[i].instr[2]);
+      strcpy(tac[tac_len].instr[3], tac_temp[i].instr[3]);
+      tac_len++;
+    }
+    tac_temp_len = 0;
+    tac_temp_tot = 1;
+    free(tac_temp);
+    tac_temp = NULL;
+  }
 
 branch:
   if_else
@@ -270,13 +293,67 @@ loops:
     loop_stack_top-=1;
   }
 
-| FOR '(' declaration ';' bool_oprtr ';' unary ')' block
-| FOR '(' assignment ';' bool_oprtr ';' unary ')' block
+| FOR 
+  '(' declaration ';' 
+  {
+    char buff[10] = {0};
+    sprintf(buff, "L%d", bool_ir_index-100);
+    loop_stack[++loop_stack_top] = bool_ir_index;
+    strcpy(tac[tac_len].instr[0], buff);
+    tac_len++;
+  }
+
+  bool_oprtr ';' 
+  {
+    backpatch($<b>6->t,bool_ir_index); 
+    backpatch($<b>6->f,bool_ir_index+1); 
+    generate_bool_oprtr();
+    bool_ir_if_stack[++bool_ir_if_top] = ++bool_ir_index;
+    bool_ir_start = bool_ir_index;
+  } 
+  
+    for_assignment ')' block
+  {
+    char buff[10] = {0};
+    sprintf(buff, "L%d", loop_stack[loop_stack_top]-100);
+
+    struct tac_package *package = (struct tac_package*)$<ptr>9;
+    int tac_temp_len = package->tac_len;
+    struct three_address_code* tac_temp = package->tac;
+    for(int i=0;i<tac_temp_len; i++)
+    {
+      strcpy(tac[tac_len].instr[0], tac_temp[i].instr[0]);
+      strcpy(tac[tac_len].instr[1], tac_temp[i].instr[1]);
+      strcpy(tac[tac_len].instr[2], tac_temp[i].instr[2]);
+      strcpy(tac[tac_len].instr[3], tac_temp[i].instr[3]);
+      tac_len++;
+    }
+
+    strcpy(tac[tac_len].instr[0], buff);
+    strcpy(tac[tac_len].instr[3], "goto");
+    tac_len++;
+    
+    loop_stack[loop_stack_top] = 0;
+    loop_stack_top-=1;    
+  }
 ;
 
-unary:
-  VARIABLE UNARY
-| UNARY VARIABLE
+for_assignment:
+  VARIABLE '=' arithmetic_oprtr
+  {
+    addToThreeAddressArthmtc("",$<string>3,"",$<string>1);
+
+    struct tac_package *package = calloc(1,sizeof(struct tac_package));
+    package->tac_len = tac_temp_len;
+    package->tac = calloc(tac_temp_len, sizeof(struct three_address_code));
+    memcpy(package->tac, tac_temp, tac_temp_len*sizeof(struct three_address_code));
+
+    tac_temp_len = 0;
+    tac_temp_tot = 1;
+    free(tac_temp);
+    tac_temp = NULL;
+    $<ptr>$ = package;
+  }
 |
 ;
 
