@@ -137,14 +137,11 @@ void backpatch(int *list,int next_ir) {
  
   int i=0;
   while(list[i]!=0) {
-    char label[10];
+    char label[25];
     strcat(bool_code[list[i]-100],addr);
     sprintf(label,"L%d: ",next_ir-100);
-    
-    
-    
-    //strcat(label,bool_code[next_ir-100]);
-    //strcpy(bool_code[next_ir-100],label);
+    strcat(label,bool_code[next_ir-100]);
+    strcpy(bool_code[next_ir-100],label);
     i++;
   }
 }
