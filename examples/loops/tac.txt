@@ -1,0 +1,22 @@
+i = 0  
+acc1 = 0  
+L0:
+if i < 10 goto L2
+goto L3
+L2:
+t0 = acc1 + i
+acc1 = t0  
+goto L0
+L3:
+acc2 = 0  
+j = 0  
+L5:
+if j < 10 goto L7
+goto L8
+L7:
+t2 = acc2 * i
+acc2 = t2  
+t1 = j + 1
+j = t1  
+goto L5
+L8:

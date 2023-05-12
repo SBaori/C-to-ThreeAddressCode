@@ -1,0 +1,11 @@
+i = 0  
+j = 6  
+if i > -2 goto L2
+goto L5
+L2:
+if j <= 5 goto L4
+goto L5
+L4:
+t0 = i + j
+res = t0  
+L5:

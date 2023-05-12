@@ -1,0 +1,12 @@
+x = 4  
+count = 1  
+if x < 5 goto L2
+goto L3
+L2:
+t0 = count * 2
+count = t0  
+goto G0
+L3:
+t1 = count + 2
+count = t1  
+G0:

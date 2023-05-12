@@ -1,0 +1,11 @@
+int main()
+{
+    int i=0, j=6;
+    int res;
+    if(i>-2 && j <= 5)
+    {
+        res = i+j;
+    }
+
+    return 0;
+}

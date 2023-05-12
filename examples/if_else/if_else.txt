@@ -1,0 +1,14 @@
+int main()
+{
+    int x = 4, count = 1;
+    if(x < 5)
+    {
+        count = count*2;
+    }
+    else
+    {
+        count = count + 2;
+    }
+
+    return 0;
+}

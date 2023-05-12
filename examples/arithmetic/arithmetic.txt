@@ -1,0 +1,7 @@
+int main()
+{
+    int x = 1+2*4;
+    int y = 4-5*x;
+    int z = 2/4*7-8+9;
+    return 0;
+}
