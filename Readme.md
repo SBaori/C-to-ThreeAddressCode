@@ -8,6 +8,7 @@
 
 ## Planned to add
 1) multi dimensional arrays
+2) symbol table
 
 ## Build
 
