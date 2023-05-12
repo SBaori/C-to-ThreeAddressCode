@@ -88,7 +88,22 @@ typedef struct B {
 void generate_bool_oprtr() {
   int temp = bool_ir_start-100;
   while(temp<bool_ir_index-100) {
-    addToThreeAddressBrnch(bool_code[temp]);
+    if(bool_code[temp][0] == 'L' && strlen(bool_code[temp]) > 3) {
+      char label[5] = {0}, if_copy[20] = {0};
+      
+      int i=0;
+      while(bool_code[temp][i] != ' ') {
+        i++;
+      }
+
+      strncpy(label, bool_code[temp], i);
+      strcpy(if_copy, bool_code[temp]+i+1);
+
+      addToThreeAddressBrnch(label);
+      addToThreeAddressBrnch(if_copy);
+    }
+    else
+      addToThreeAddressBrnch(bool_code[temp]);
     temp++;
   }
 
@@ -137,11 +152,13 @@ void backpatch(int *list,int next_ir) {
  
   int i=0;
   while(list[i]!=0) {
-    char label[25];
-    strcat(bool_code[list[i]-100],addr);
-    sprintf(label,"L%d: ",next_ir-100);
-    strcat(label,bool_code[next_ir-100]);
-    strcpy(bool_code[next_ir-100],label);
+      char label[25];
+      strcat(bool_code[list[i]-100],addr);
+      if(bool_code[next_ir-100][0] != 'L') {
+        sprintf(label,"L%d: ",next_ir-100);
+        strcat(label,bool_code[next_ir-100]);
+        strcpy(bool_code[next_ir-100],label);
+      }
     i++;
   }
 }
@@ -477,7 +494,7 @@ bool_oprtr:
     B *b = calloc(1,sizeof(B)); 
     backpatch($<b>1->f,$<b>3->next_ir);
     b->t = merge_list($<b>1->t,$<b>4->t);
-    b->t = copy_list($<b>4->t);
+    b->f = copy_list($<b>4->f);
     $<b>$ = b;
   }
 | '(' bool_oprtr ')'            {$<b>$ = $<b>2;}
