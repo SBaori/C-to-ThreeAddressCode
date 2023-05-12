@@ -474,7 +474,14 @@ arithmetic_oprtr:
     generate_code("/", $<string>1, $<string>3, temp);
 		strcpy($<string>$,temp);   
   }
-| '-' arithmetic_oprtr %prec UMINUS     {strcpy($<string>$,$<string>2);}
+| '-' arithmetic_oprtr %prec UMINUS     
+  {
+    char val[10] = {0};
+    val[0] = '-'; 
+    strcat(val, $<string>2); 
+    strcpy($<string>$,val);
+  }
+
 | '(' arithmetic_oprtr ')'              {strcpy($<string>$,$<string>2);}
 | VARIABLE                              {strcpy($<string>$,$<string>1);}
 | CONSTANT                              {strcpy($<string>$,$<string>1);}
