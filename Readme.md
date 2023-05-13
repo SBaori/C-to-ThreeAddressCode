@@ -10,7 +10,7 @@
 1) multi dimensional arrays
 2) symbol table
 
-## Build
+# Build
 
 ```bash
   yacc -d yacc.y
@@ -23,7 +23,7 @@ or
   ./build.sh
 ```
 
-## Run
+# Run
 
 ```
   ./generator < input.txt
